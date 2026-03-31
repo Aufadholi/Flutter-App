@@ -33,9 +33,9 @@ class ProductDetail extends StatelessWidget {
                   child: ElevatedButton(
                     onPressed: () {
                       shop.addToCart(product.id);
-                      Navigator.of(context).pushNamed('/cart');
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Added to cart')));
                     },
-                    child: const Text('Add to Cart & Checkout'),
+                    child: const Text('Add to Cart'),
                   ),
                 ),
               ],

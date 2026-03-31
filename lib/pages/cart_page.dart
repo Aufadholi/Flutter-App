@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../providers/shop_provider.dart';
+import '../providers/auth_provider.dart';
 
 class CartPage extends StatelessWidget {
   const CartPage({Key? key}) : super(key: key);
@@ -10,7 +11,7 @@ class CartPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Keranjang')),
-      body: Consumer<ShopProvider>(builder: (ctx, shop, _) {
+      body: Consumer2<ShopProvider, AuthProvider>(builder: (ctx, shop, auth, _) {
         final items = shop.cart.entries.toList();
         double total = 0;
         for (var e in items) {
@@ -50,6 +51,24 @@ class CartPage extends StatelessWidget {
                   Expanded(child: Text('Total: \$${total.toStringAsFixed(2)}', style: const TextStyle(fontSize: 18))),
                   ElevatedButton(onPressed: shop.cart.isEmpty ? null : () { shop.clearCart(); }, child: const Text('Clear'))
                 ],
+              ),
+            )
+            ,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6),
+              child: ElevatedButton(
+                onPressed: (shop.cart.isEmpty || !auth.isAuthenticated)
+                    ? () {
+                        if (!auth.isAuthenticated) {
+                          Navigator.of(context).pushNamed('/profile');
+                        }
+                      }
+                    : () {
+                        // perform checkout (client-side): clear cart and show confirmation
+                        shop.clearCart();
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Order placed successfully')));
+                      },
+                child: Text(auth.isAuthenticated ? 'Checkout' : 'Sign in to Checkout'),
               ),
             )
           ],

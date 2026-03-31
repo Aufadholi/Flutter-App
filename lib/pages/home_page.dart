@@ -5,166 +5,127 @@ import '../providers/shop_provider.dart';
 import '../models/product.dart';
 import 'product_detail.dart';
 
-class HomePage extends StatefulWidget {
+class HomePage extends StatelessWidget {
   const HomePage({Key? key}) : super(key: key);
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  Widget build(BuildContext context) {
+    return Consumer<ShopProvider>(builder: (ctx, shop, _) {
+      if (shop.loading && shop.products.isEmpty) {
+        return const Center(child: CircularProgressIndicator());
+      }
+
+      // pick some randomized hot products to display as ads
+      final ads = shop.hotProducts(count: 10).toList();
+      ads.shuffle();
+      final top3 = ads.take(3).toList();
+
+      Widget adCard(BuildContext ctx, int index) {
+        final p = top3[index];
+        return _AdCard(product: p);
+      }
+
+      return Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SizedBox(height: 8),
+            const Text('Featured', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 220,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: top3.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 12),
+                itemBuilder: adCard,
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text('Explore our Shop for more items', style: TextStyle(fontSize: 16, color: Colors.black54)),
+            const SizedBox(height: 8),
+            // teaser list
+            Expanded(
+              child: ListView.builder(
+                itemCount: shop.products.length,
+                itemBuilder: (context, i) {
+                  final p = shop.products[i];
+                  return ListTile(
+                    title: Text(p.title),
+                    subtitle: Text('${p.category} • \$${p.price.toStringAsFixed(2)}'),
+                    onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ProductDetail(productId: p.id))),
+                  );
+                },
+              ),
+            )
+          ],
+        ),
+      );
+    });
+  }
 }
 
-class _HomePageState extends State<HomePage> {
-  bool _initiated = false;
+class _AdCard extends StatefulWidget {
+  final Product product;
+  const _AdCard({Key? key, required this.product}) : super(key: key);
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_initiated) {
-      _initiated = true;
-      final shop = Provider.of<ShopProvider>(context, listen: false);
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        shop.fetchProducts();
-      });
-    }
-  }
+  State<_AdCard> createState() => _AdCardState();
+}
+
+class _AdCardState extends State<_AdCard> {
+  double _scale = 1.0;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Online Shop'),
-        actions: [
-          Consumer<ShopProvider>(builder: (ctx, shop, _) {
-            final count = shop.cart.values.fold<int>(0, (a, b) => a + b);
-            return IconButton(
-              icon: Stack(
+    return MouseRegion(
+      onEnter: (_) => setState(() => _scale = 1.03),
+      onExit: (_) => setState(() => _scale = 1.0),
+      child: AnimatedScale(
+        scale: _scale,
+        duration: const Duration(milliseconds: 180),
+        child: GestureDetector(
+          onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ProductDetail(productId: widget.product.id))),
+          child: Card(
+            elevation: 4,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: SizedBox(
+              width: 300,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.shopping_cart),
-                  if (count > 0)
-                    Positioned(
-                      right: 0,
-                      child: CircleAvatar(
-                        radius: 8,
-                        backgroundColor: Colors.red,
-                        child: Text('$count', style: const TextStyle(fontSize: 10, color: Colors.white)),
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                      child: CachedNetworkImage(
+                        imageUrl: widget.product.imageUrl,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        placeholder: (c, u) => const Center(child: CircularProgressIndicator()),
+                        errorWidget: (c, u, e) => const Icon(Icons.broken_image, size: 48),
                       ),
-                    )
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(widget.product.title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 6),
+                        const Text('Discover the timeless elegance of this product — crafted for everyday moments.', style: TextStyle(color: Colors.black54)),
+                        const SizedBox(height: 8),
+                        Text('\$${widget.product.price.toStringAsFixed(2)}', style: const TextStyle(fontSize: 16, color: Colors.green)),
+                      ],
+                    ),
+                  )
                 ],
               ),
-              onPressed: () => Navigator.of(context).pushNamed('/cart'),
-            );
-          })
-        ],
+            ),
+          ),
+        ),
       ),
-      body: Consumer<ShopProvider>(builder: (ctx, shop, _) {
-        if (shop.loading && shop.products.isEmpty) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        final selected = shop.selectedCategory;
-        final categories = shop.categories;
-
-        Widget topSection() {
-          final hot = shop.hotProducts();
-          return SizedBox(
-            height: 180,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: hot.length,
-                itemBuilder: (context, i) {
-                final p = hot[i];
-                return GestureDetector(
-                  onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ProductDetail(productId: p.id))),
-                  child: Card(
-                    margin: const EdgeInsets.all(8),
-                    child: SizedBox(
-                      width: 140,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Expanded(
-                              child: CachedNetworkImage(
-                            imageUrl: p.imageUrl,
-                            fit: BoxFit.cover,
-                            placeholder: (c, u) => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                            errorWidget: (c, u, e) => const Icon(Icons.broken_image),
-                          )),
-                          Padding(
-                            padding: const EdgeInsets.all(6.0),
-                            child: Text(p.title, maxLines: 1, overflow: TextOverflow.ellipsis),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          );
-        }
-
-        Widget productList(List<Product> list) {
-          return Expanded(
-            child: ListView.builder(
-              itemCount: list.length,
-              itemBuilder: (context, i) {
-                final p = list[i];
-                return ListTile(
-                  leading: SizedBox(
-                    width: 56,
-                    height: 56,
-                    child: CachedNetworkImage(
-                      imageUrl: p.imageUrl,
-                      fit: BoxFit.cover,
-                      placeholder: (c, u) => const Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))),
-                      errorWidget: (c, u, e) => const Icon(Icons.broken_image),
-                    ),
-                  ),
-                  title: Text(p.title),
-                  subtitle: Text('${p.category} • \$${p.price.toStringAsFixed(2)}'),
-                  onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ProductDetail(productId: p.id))),
-                );
-              },
-            ),
-          );
-        }
-
-        return Column(
-          children: [
-            // Filters
-            SizedBox(
-              height: 56,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                children: [
-                  const SizedBox(width: 8),
-                  ChoiceChip(
-                    label: const Text('All'),
-                    selected: selected == null,
-                    onSelected: (_) => shop.setCategory(null),
-                  ),
-                  const SizedBox(width: 8),
-                  for (var cat in categories) ...[
-                    ChoiceChip(
-                      label: Text(cat),
-                      selected: selected == cat,
-                      onSelected: (_) => shop.setCategory(selected == cat ? null : cat),
-                    ),
-                    const SizedBox(width: 8),
-                  ]
-                ],
-              ),
-            ),
-            // Content
-            if (selected == null) ...[
-              topSection(),
-              const Divider(),
-              Expanded(child: productList(shop.products)),
-            ] else ...[
-              // merged view when a filter is selected
-              Expanded(child: productList(shop.productsByCategory(selected))),
-            ]
-          ],
-        );
-      }),
     );
   }
 }

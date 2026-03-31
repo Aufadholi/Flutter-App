@@ -11,7 +11,20 @@ class ShopProvider extends ChangeNotifier {
 
   bool _loading = false;
 
+  String? _errorMessage;
+
+  String? get errorMessage => _errorMessage;
+
   bool get loading => _loading;
+
+  // paging
+  final int _pageSize = 10;
+  int _offset = 0;
+  bool _isLoadingMore = false;
+  bool _hasMore = true;
+
+  bool get isLoadingMore => _isLoadingMore;
+  bool get hasMore => _hasMore;
 
   final Map<String, int> _cart = {};
   String? _selectedCategory;
@@ -52,15 +65,55 @@ class ShopProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final List<Product> parsed = await ApiService.fetchProducts(limit: 30);
-      _products.clear();
-      _products.addAll(parsed);
-      // reset hot cache so it is recalculated once
-      _hotCache = [];
+      // try load cache first
+      final cached = await ApiService.loadCache(limit: _pageSize);
+      if (cached.isNotEmpty) {
+        _products.clear();
+        _products.addAll(cached);
+      }
+
+      // fetch first page
+      _offset = 0;
+      _hasMore = true;
+      final res = await ApiService.fetchProducts(limit: _pageSize, offset: _offset, retries: 2);
+      if (res.isSuccess) {
+        _products.clear();
+        _products.addAll(res.data!);
+        _hotCache = [];
+        _errorMessage = null;
+        _offset += res.data!.length;
+        _hasMore = res.data!.length == _pageSize;
+      } else {
+        _errorMessage = res.error;
+        debugPrint('ApiService error: ${res.error}');
+      }
     } catch (e) {
-      // ignore network errors for now
+      _errorMessage = e.toString();
+      debugPrint('fetchProducts exception: $e');
     } finally {
       _loading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadMore() async {
+    if (_isLoadingMore || !_hasMore) return;
+    _isLoadingMore = true;
+    notifyListeners();
+
+    try {
+      final res = await ApiService.fetchProducts(limit: _pageSize, offset: _offset, retries: 1);
+      if (res.isSuccess) {
+        _products.addAll(res.data!);
+        _offset += res.data!.length;
+        _hasMore = res.data!.length == _pageSize;
+      } else {
+        debugPrint('loadMore error: ${res.error}');
+      }
+    } catch (e) {
+      debugPrint('loadMore exception: $e');
+    } finally {
+      _isLoadingMore = false;
       notifyListeners();
     }
   }

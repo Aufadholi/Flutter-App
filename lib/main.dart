@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/shop_provider.dart';
-import 'pages/home_page.dart';
+import 'providers/auth_provider.dart';
+import 'pages/main_scaffold.dart';
 import 'pages/cart_page.dart';
 
 void main() {
@@ -14,12 +15,15 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
-      providers: [ChangeNotifierProvider(create: (_) => ShopProvider())],
+      providers: [
+        ChangeNotifierProvider(create: (_) => ShopProvider()),
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+      ],
       child: MaterialApp(
-        title: 'Online Shop',
+        title: 'P-BUY',
         theme: ThemeData(primarySwatch: Colors.blue),
+        home: const MainScaffold(),
         routes: {
-          '/': (_) => const HomePage(),
           '/cart': (_) => const CartPage(),
         },
       ),
