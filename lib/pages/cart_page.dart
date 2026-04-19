@@ -57,16 +57,18 @@ class CartPage extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6),
               child: ElevatedButton(
-                onPressed: (shop.cart.isEmpty || !auth.isAuthenticated)
+                onPressed: shop.cart.isEmpty
+                    ? null
+                    : auth.isAuthenticated
                     ? () {
-                        if (!auth.isAuthenticated) {
-                          Navigator.of(context).pushNamed('/profile');
-                        }
-                      }
-                    : () {
                         // perform checkout (client-side): clear cart and show confirmation
                         shop.clearCart();
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Order placed successfully')));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Order placed successfully')),
+                        );
+                      }
+                    : () {
+                        Navigator.of(context).pushNamed('/profile');
                       },
                 child: Text(auth.isAuthenticated ? 'Checkout' : 'Sign in to Checkout'),
               ),

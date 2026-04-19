@@ -4,6 +4,7 @@ import 'providers/shop_provider.dart';
 import 'providers/auth_provider.dart';
 import 'pages/main_scaffold.dart';
 import 'pages/cart_page.dart';
+import 'pages/profile_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -25,6 +26,9 @@ class MyApp extends StatelessWidget {
         home: const MainScaffold(),
         routes: {
           '/cart': (_) => const CartPage(),
+          '/profile':
+              (_) =>
+                  const Scaffold(body: SafeArea(child: ProfilePage())),
         },
       ),
     );
