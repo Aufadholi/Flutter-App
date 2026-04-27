@@ -82,35 +82,33 @@ class _ShopPageState extends State<ShopPage> {
       }
 
       Widget productList(List<Product> list) {
-        return Expanded(
-          child: ListView.builder(
-            controller: _sc,
-            itemCount: list.length + (shop.isLoadingMore ? 1 : 0),
-            itemBuilder: (context, i) {
-              if (i >= list.length) {
-                return const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 12),
-                  child: Center(child: CircularProgressIndicator()),
-                );
-              }
-              final p = list[i];
-              return ListTile(
-                leading: SizedBox(
-                  width: 56,
-                  height: 56,
-                  child: CachedNetworkImage(
-                    imageUrl: p.imageUrl,
-                    fit: BoxFit.cover,
-                    placeholder: (c, u) => const Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))),
-                    errorWidget: (c, u, e) => const Icon(Icons.broken_image),
-                  ),
-                ),
-                title: Text(p.title),
-                subtitle: Text('${p.category} • \$${p.price.toStringAsFixed(2)}'),
-                onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ProductDetail(productId: p.id))),
+        return ListView.builder(
+          controller: _sc,
+          itemCount: list.length + (shop.isLoadingMore ? 1 : 0),
+          itemBuilder: (context, i) {
+            if (i >= list.length) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Center(child: CircularProgressIndicator()),
               );
-            },
-          ),
+            }
+            final p = list[i];
+            return ListTile(
+              leading: SizedBox(
+                width: 56,
+                height: 56,
+                child: CachedNetworkImage(
+                  imageUrl: p.imageUrl,
+                  fit: BoxFit.cover,
+                  placeholder: (c, u) => const Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))),
+                  errorWidget: (c, u, e) => const Icon(Icons.broken_image),
+                ),
+              ),
+              title: Text(p.title),
+              subtitle: Text('${p.category} • \$${p.price.toStringAsFixed(2)}'),
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ProductDetail(productId: p.id))),
+            );
+          },
         );
       }
 
